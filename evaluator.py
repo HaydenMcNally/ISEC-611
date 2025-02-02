@@ -11,7 +11,6 @@ from cryptography.hazmat.primitives import serialization
 
 """Note used chatgpt to edit comments for grammmar and spelling unedited comment can be found in ogcommenteval.py file in ogcomment folder"""
 
-
 """The example consists of two participants: the Garbler (the other program) and the Evaluator (this program).
 The Garbler creates the circuit and 'garbles' all the inputs (encrypts them), then sends them to the Evaluator.
 The Evaluator processes the garbled circuits to obtain the final result.

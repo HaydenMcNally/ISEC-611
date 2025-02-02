@@ -28,6 +28,19 @@ The outputs of Gate 1 and Gate 2 feed into Gate 3.
 """
 
 
+def oblivious_transfer(sender_inputs):
+    #Network talk with the evaluator to get the public keys
+
+
+    #Encyption code from evaluator
+
+
+    #Send the encyptions back
+
+
+
+    pass
+
 
 def shuffle_list(lst):
     """
