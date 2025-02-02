@@ -13,20 +13,13 @@ import base64
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization
 
-"""Note used chatgpt to edit comments for grammmar and spelling unedited comment can be found in ogcommentgar.py file in ogcomment folder"""
 
-"""The example consists of two participants: the Garbler (this program) and the Evaluator (the other program).
-The Garbler creates the circuit and 'garbles' all the inputs (encrypts them), then sends them to the Evaluator.
-The Evaluator processes the garbled circuits to obtain the final result.
+"""The example consists of two participants the Garbler this program and the Evaluator the other program.
+The Garbler will create the circuit and 'garble' all the inputs (encrypted them) and then send them to the 
+Evaluator. Who then evaluates all circuits to get the final answer. We first start in the Garbler with the makeCircuit function.
+The logic circuit being created is Gate 1 - AND, Gate 2 - OR, Gate 3 - XOR. Gate 1 and 2 feed into Gate 3.
 
-We begin in the Garbler with the makeCircuit function. The logic circuit being created consists of:
-
-Gate 1: AND  
-Gate 2: OR  
-Gate 3: XOR  
-The outputs of Gate 1 and Gate 2 feed into Gate 3.
 """
-
 
 
 def shuffle_list(lst):
@@ -43,21 +36,20 @@ def shuffle_list(lst):
     random.shuffle(shuffled_list)
     return shuffled_list
 
-"""This function creates wire values using the BLAKE2 hash algorithm to generate secure 128-bit hashes, 
-which is the recommended wire value size. We also create a random 1 or 0 to append to the end of the hash as a point value. 
-This value is unrelated to the input value the hash represents and is used to guide the Evaluator in determining which logic gate 
-output to decrypt.
+"""This function is used to create wire values using the blake2 hash alrogithm to create secure 128 bit hashes, which is the
+recommend wire value size. We also create a random 1 or 0 to add to the end of the hash as a point value. This value has no
+connection to the value the hash is repersenting and is use to tell the evaluators which answer in a logic gate to decrypt.
 
-Inputs: None  
-Outputs: Two 128-bit hashes representing 0 and 1"""
+This function takes no inputs
+Outputs two 128 bit hashes repersenting 0 and 1"""
 def getWireValuePair():
-    """Start by generating 4 bytes of random data and defining 0 and 1 as base values."""
+    """Start by getting 4 bytes of random data and out 0 and 1"""
     random_bytes = secrets.token_bytes(4)
     g1 = 1
     g0 = 0
-    """Generate a random point value (0 or 1)."""
+    """Getting the random point value"""
     random_point = secrets.randbelow(2)
-    """Concatenate the random bytes with the original value, hash it, and append the point value to the end."""
+    """Add the random bytes to the original value and hash it, concatinating the point value on the end at the end"""
     data = g0 + int.from_bytes(random_bytes, byteorder='big')
     hash_object = hashlib.blake2s(str(data).encode(),digest_size=16) 
     g0 = hash_object.hexdigest()
@@ -65,7 +57,7 @@ def getWireValuePair():
 
     """Use XOR to flip the point bit so the opposite original value has the opposite point value"""
     flip_random_point = random_point ^ 1
-    """Hash the other original value."""
+    """Hash the other original value"""
     data = g1 + int.from_bytes(random_bytes, byteorder='big')
     hash_object = hashlib.blake2s(str(data).encode(),digest_size=16) 
     g1 = hash_object.hexdigest()
@@ -89,11 +81,11 @@ def derive_key(password: str, salt: bytes):
     return kdf.derive(password.encode())
 
 
-"""Standard AES encryption function. A notable change is that we use two passwords (the two input wire values) as keys, 
-concatenating them together to derive the encryption key.
+"""Standard AES encyption function, notable changes are we take two passwords(The two input wire values) as keys which are concatinated together to
+create the key.
 
-Inputs: Password 1, Password 2, and the plaintext  
-Output: Encrypted output"""
+Inputs: Password 1, Password 2, and the plaintext
+Output: encypted output"""
 def encyptAnswer(password1: str, password2: str, plaintext: str):
     salt = os.urandom(16)  # Generate a random salt
     key = derive_key(password1+password2, salt)
@@ -111,27 +103,19 @@ def encyptAnswer(password1: str, password2: str, plaintext: str):
 
 
 
-"""This function generates all the components required for the garbled circuit, including:  
-- The Garbler's input wire values  
-- The Evaluator's input wire values  
-- The logic gates  
-- The answer key for the wire values of the final gate  
+"""This function creates all the components needed for the garbled circuit that being the garblers wires(inputs),
+the evaluators wires(inputs), the logic gates themselves and the answer key for the wire values of the last gate.
+All the wire values are made using a hash of a random input and the outputs are encypted using the input wire values as keys
 
-All wire values are generated using a hash of random inputs, and outputs are encrypted using the input wire values as keys.  
+The logic circuit being created is Gate 1 - AND, Gate 2 - OR, Gate 3 - XOR. Gate 1 and 2 feed into Gate 3.
 
-The logic circuit being created consists of:  
-Gate 1: AND  
-Gate 2: OR  
-Gate 3: XOR  
-The outputs of Gate 1 and Gate 2 feed into Gate 3.  
-
-Inputs: None  
-Outputs: A tuple containing the gates, Garbler's wires, Evaluator's wires, and the answer key.
+This function takes no inputs.
+This function outputs are the gates,garblers wires, evaluators wires, and answer key as described above.
 """
 def makeCircuit():
 
-    """First, we create the wire values using getWireValuePair().  
-    Note that we only generate the output wire values for Gate 3, as the outputs from Gate 1 and Gate 2 will be used as inputs to Gate 3."""
+    """To start we create the wire values with the function getWireValuePair(), note here we only create the answer
+    wire values for gate3 since the answers from gate 1 and 2 are the inputs to gate3"""
     gate1Gar0,gate1Gar1  = getWireValuePair()
     gate1Eval0,gate1Eval1  = getWireValuePair()
     gate1Ans0,gate1Ans1  = getWireValuePair()
@@ -143,18 +127,14 @@ def makeCircuit():
 
     gate3Ans0,gate3Ans1  = getWireValuePair()
 
-    """Store the answer wire values in a list for returning."""
+    """Putting the answer wire values in a list to return"""
     Anskey = [gate3Ans0,gate3Ans1]
 
 
-    """Construct a 2D list for each logic gate, where each row represents a truth table entry,  
-    containing the two input wire values and the encrypted output.  
-
-    To guide the Evaluator, we store the point values as inputs, and the outputs are AES-encrypted.  
-    This ensures that the Evaluator can only decrypt the correct output value and not both possible values.  
-
-    After constructing the gate, we shuffle the list so that no information is leaked based on row indices.
-    """
+    """With the wire values we create a 2D list of each logic gate where the items in the first list are rows of the turth table and the items in the second list are the two inputs and the output of that row.
+    To direct the evaluator in decrpytion we add the point values as the inputs for each row and the answers are encypted with AES so the evaluator can only learn the wire value of the answer and not both values.
+    Note that when creating the gate we are manually putting the correct wire values to create the correct logic gate.
+    After the whole gate is created we shuffle the list so that no information is given based on the index of a row."""
     gate1AND = [[gate1Gar0[-1],gate1Eval0[-1],encyptAnswer(gate1Gar0,gate1Eval0,gate1Ans0)],[gate1Gar1[-1],gate1Eval0[-1],encyptAnswer(gate1Gar1,gate1Eval0,gate1Ans0)],[gate1Gar0[-1],gate1Eval1[-1],encyptAnswer(gate1Gar0,gate1Eval1,gate1Ans0)],[gate1Gar1[-1],gate1Eval1[-1],encyptAnswer(gate1Gar1,gate1Eval1,gate1Ans1)]]
     gate1AND = shuffle_list(gate1AND)
 
@@ -164,13 +144,11 @@ def makeCircuit():
     gate3XOR = [[gate1Ans0[-1],gate2Ans0[-1],encyptAnswer(gate1Ans0,gate2Ans0,gate3Ans0)],[gate1Ans1[-1],gate2Ans0[-1],encyptAnswer(gate1Ans1,gate2Ans0,gate3Ans1)],[gate1Ans0[-1],gate2Ans1[-1],encyptAnswer(gate1Ans0,gate2Ans1,gate3Ans1)],[gate1Ans1[-1],gate2Ans1[-1],encyptAnswer(gate1Ans1,gate3Ans1,gate1Ans0)]]
     gate3XOR = shuffle_list(gate3XOR)
 
-    """After constructing all gate lists, we store them in a list to send to the Evaluator,  
-    along with the Evaluator's wire values."""
+    """Once all the Gate list are constructed we put them in a list to send to the evaluator, same with the evaluators wire values"""
     gates = [gate1AND,gate2OR,gate3XOR]
     EvalWires = [[gate1Eval0,gate1Eval1],[gate2Eval0,gate2Eval1]]
 
-    """Generate random bits to determine which wire values the Garbler uses for the circuit,  
-    then add the corresponding wire values to a list."""
+    """We get some random bits to decide what values the garble is using for the circuit and add the corrisponding wire values to a list"""
     random_bit1 = secrets.randbelow(2)
     random_bit2 = secrets.randbelow(2)
     print("Gate 1 random bit is ", random_bit1, "Gate 2 random bit is ", random_bit2)
@@ -186,25 +164,25 @@ def makeCircuit():
 
     return gates, EvalWires , GarWires , Anskey
 
-"""This function performs Oblivious Transfer (OT) to securely send the Evaluator's wire values  
-without revealing both wire values to the Evaluator or revealing the Evaluator's choice to the Garbler.  
+"""This function is for oblivious transfer sending the evaluators wires values to them without them learning both wire values
+and for the garbler not to learn which wire value their using. This is done with RSA key pairs the evaluator creates two key pairs
+and gets rid of one of the private keys. They send both public keys and the garbler encypts the wire values with the corrisponding public key
+and send encypted wire values back. The Evaluator can then only decrypt the one they still have the private key two and the garbler
+doesn't know which public key still has the private key so hence doesn't learn which wire the evaluator has.
 
-This is achieved using RSA key pairs:  
-- The Evaluator generates two key pairs and discards one private key.  
-- The Evaluator sends both public keys to the Garbler.  
-- The Garbler encrypts each wire value with the corresponding public key and sends them back.  
-- The Evaluator can only decrypt the value corresponding to the private key they kept.  
+Inputs: sender_inputs - wire values to send
+        socket_c - network socket connected with the evaluator
 
-This ensures that the Garbler does not know which wire value the Evaluator received.
-
-Inputs:  
-- sender_inputs: The wire values to send  
-- socket_c: A network socket connected to the Evaluator  
-
-Outputs: None  
+Outputs: None
 """
 def oblivious_transfer(sender_inputs,socket_c):
-    """Receive the public keys from the Evaluator and deserialize them."""
+    """
+    Garbler (Sender) encrypts and sends two messages securely.
+    """
+   
+    #print(sender_inputs)
+    # Receive pickled chooser's public key
+    """Recieve the public keys and unserialize them"""
     chooser_public_key_pem_list = pickle.loads(socket_c.recv(4096))
     chooser_public_key_0 = serialization.load_pem_public_key(
         chooser_public_key_pem_list[0], backend=default_backend()
@@ -213,8 +191,9 @@ def oblivious_transfer(sender_inputs,socket_c):
         chooser_public_key_pem_list[1], backend=default_backend()
     )
 
-    """Encrypt the two wire values with the corresponding public keys.  
-    The Evaluator selects which value to receive by controlling the order of public keys sent."""
+    """Encypt the two wire values with the corrisponding(Matching indexes of wire and public key,Evaluator can choose
+    which value to get by changing the order of public keys) public keys."""
+    # Encrypt messages using chooser's public key
     encrypted_inputs = []
     message = sender_inputs[0]
     ciphertext_0 = chooser_public_key_0.encrypt(
@@ -236,24 +215,23 @@ def oblivious_transfer(sender_inputs,socket_c):
         )
     )
     encrypted_inputs.append(ciphertext_1)
-    """Send the encrypted wire values back to the Evaluator."""
+    """Sending the encypted wire values back"""
+    # Pickle and send encrypted messages
     socket_c.sendall(pickle.dumps(encrypted_inputs))
     pass
 
 
-"""This function sends all parts of the circuit to the Evaluator.
+"""This function is for sending all parts of the circuit to the evaluator.
 
-Inputs:  
-- gates: The logic gates in the circuit  
-- EvalWires: The Evaluator's wire values  
-- GarWires: The Garbler's wire values  
-- AnsKey: The final gate's output wire values  
-
-Outputs:  
-- A socket connection to the Evaluator"""
+Inputs: Gates- logic gate in the circuit
+        EvalWires - Evaluator wire values
+        GarWires - Garblers wire values
+        Anskey - wires of the last gates answers
+        
+Outputs: Socket - network socket connected with the evaluator"""
 def sendCircuit(gates, EvalWires , GarWires , AnsKey):
 
-    """First, create a socket connection with the Evaluator and confirm that data can be sent and received."""
+    """First we create a socket with the evaluator and confirm we can send and recieve"""
     HOST = '127.0.0.1'  # Listen on localhost
     PORT = 12345        # Port to listen on
 
@@ -273,11 +251,11 @@ def sendCircuit(gates, EvalWires , GarWires , AnsKey):
     response = "Message received!"
     client_socket.send(response.encode())  # Send a response back
 
-    """To prevent information leakage, we use Oblivious Transfer to securely send the Evaluator's wire values."""
+    """The to not leak information to the garbler when giving the evaluators wire value we use an oblivious transfer to send them the values"""
     oblivious_transfer(EvalWires[0],client_socket)
     oblivious_transfer(EvalWires[1],client_socket)
 
-    """Serialize the circuit components to facilitate network transmission."""
+    """We serialize the circuits information to easily send it over the network"""
     print("Sending gate")
     serialized_data_gates = pickle.dumps(gates)
     print("Sending garbled wires")
@@ -286,7 +264,7 @@ def sendCircuit(gates, EvalWires , GarWires , AnsKey):
     serialized_data_Anskey = pickle.dumps(AnsKey)
 
 
-    """Send each component of the circuit to the Evaluator."""
+    """Sending each componet to the evaluator"""
     client_socket.sendall(serialized_data_gates)
     data = client_socket.recv(1024).decode()
     client_socket.sendall(serialized_data_GarWires)
@@ -296,13 +274,10 @@ def sendCircuit(gates, EvalWires , GarWires , AnsKey):
 
     return client_socket
 
-"""This function receives the Evaluator's computed result from the garbled circuit.
+"""Function to recive back the garbled circuit answer from the evaluator.
 
-Inputs:  
-- client_socket: A socket connection to the Evaluator  
-
-Outputs:  
-- None (prints the received answer)"""
+Input: Socket connected with evaluator
+Output: None"""
 def getAnswer(client_socket):
     data = client_socket.recv(1024).decode()  # Receive data from the client
     print(f"Answer: {data}")
@@ -312,11 +287,11 @@ def getAnswer(client_socket):
 def main():
 
 
-    """The first step is for the Garbler to create the circuit and garble all inputs."""
+    """The first step is for the Garbler to make the circuit and garble all the inputs"""
     gates, EvalWires , GarWires , Anskey = makeCircuit()
-    """Next, we send the circuit to the Evaluator."""
+    """Next we send the circuit to the Evaluator"""
     client_socket = sendCircuit(gates, EvalWires , GarWires , Anskey)
-    """Once the Evaluator processes the circuit, they send the result back."""
+    """Once the evaluator evaluates the circuit they send us the answer back"""
     getAnswer(client_socket)
 
 
